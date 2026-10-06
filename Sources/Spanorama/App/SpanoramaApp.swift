@@ -6,11 +6,13 @@ import SpanoramaKit
 struct SpanoramaApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var model = EditorModel()
+    @StateObject private var updater = UpdateModel()
 
     var body: some Scene {
         WindowGroup("Spanorama") {
             ContentView()
                 .environmentObject(model)
+                .environmentObject(updater)
         }
         .windowToolbarStyle(.unified)
         .commands {
@@ -57,6 +59,8 @@ struct SpanoramaApp: App {
 
         Settings {
             SettingsView()
+                .environmentObject(model)
+                .environmentObject(updater)
         }
     }
 }

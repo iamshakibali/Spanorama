@@ -208,5 +208,18 @@ runner.run("ImageStore") { t in
     t.check(store.image(for: key) == nil, "removed image no longer loads")
 }
 
+// MARK: - UpdateCheck
+
+runner.run("UpdateCheck: version comparison") { t in
+    t.check(UpdateCheck.isNewer("v0.2.0", than: "0.1.0"), "v0.2.0 is newer than 0.1.0")
+    t.check(!UpdateCheck.isNewer("v0.1.0", than: "0.1.0"), "equal versions are not newer")
+    t.check(!UpdateCheck.isNewer("v0.1.0", than: "0.2.0"), "older version is not newer")
+    t.check(UpdateCheck.isNewer("v0.1.10", than: "v0.1.9"), "numeric comparison, not lexicographic")
+    t.check(UpdateCheck.isNewer("0.2", than: "v0.1.9"), "missing parts padded as zero")
+    t.check(UpdateCheck.isNewer("1.0", than: "0.9.9"), "major bump wins")
+    t.check(!UpdateCheck.isNewer("garbage", than: "0.1.0"), "malformed candidate parses as 0.0.0")
+    t.check(UpdateCheck.parse("v1.2.3") == (1, 2, 3), "parse strips v prefix")
+}
+
 print("\n\(runner.passed) checks passed, \(runner.failures.count) failed")
 exit(runner.failures.isEmpty ? 0 : 1)

@@ -3,6 +3,7 @@ import SpanoramaKit
 
 struct ContentView: View {
     @EnvironmentObject var model: EditorModel
+    @EnvironmentObject var updater: UpdateModel
 
     private var applyErrorBinding: Binding<Bool> {
         Binding(
@@ -42,6 +43,19 @@ struct ContentView: View {
                 Button("OK", role: .cancel) {}
             } message: { message in
                 Text(message)
+            }
+            .alert("Update Available", isPresented: $updater.showDialog, presenting: updater.availableRelease) { release in
+                Button("Download Update") {
+                    Task { await updater.downloadAndOpen() }
+                }
+                Button("Skip This Version") {
+                    updater.skipCurrentRelease()
+                }
+                Button("Remind Me Later", role: .cancel) {
+                    updater.dismissDialog()
+                }
+            } message: { release in
+                Text("\(release.name ?? release.tagName) is available — you have v\(updater.currentVersion). The update opens as a disk image; drag Spanorama into Applications.")
             }
     }
 
