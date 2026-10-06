@@ -1,0 +1,51 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run tests
+        run: swift run SpanoramaTests
+
+      - name: Build app bundle
+        run: ./Scripts/build-app.sh release
+
+      - name: Zip app bundle
+        run: ditto -c -k --sequesterRsrc --keepParent dist/Spanorama.app dist/Spanorama.zip
+
+      - name: Decide release tag
+        id: tag
+        run: |
+          if [[ "$GITHUB_REF" == "refs/tags/v"* ]]; then
+            echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          else
+            version=$( /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' dist/Spanorama.app/Contents/Info.plist )
+            echo "tag=v${version}-build.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          args=()
+          if [ "${{ steps.tag.outputs.prerelease }}" = "true" ]; then
+            args+=(--prerelease)
+          fi
+          gh release create "${{ steps.tag.outputs.tag }}" dist/Spanorama.zip \
+            --title "Spanorama ${{ steps.tag.outputs.tag }}" \
+            --notes "Requires macOS 14+. This build is ad-hoc signed: on first launch, right-click Spanorama.app → Open, or run \`xattr -cr Spanorama.app\`." \
+            --generate-notes \
+            "${args[@]}"

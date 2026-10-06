@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Spanorama — One picture, every display</title>
+<title>Spanorama — One image. Every display.</title>
 <meta name="description" content="Spanorama is a free, open-source macOS app that spans one panorama across all your displays, places images exactly where you want them, and applies each slice at native Retina quality — pixel-perfect down to the seam.">
-<meta property="og:title" content="Spanorama — One picture, every display">
+<meta property="og:title" content="Spanorama — One image. Every display.">
 <meta property="og:description" content="A free, open-source macOS app for wallpapers that cross the bezel: panorama spanning, free positioning, pixel-perfect per-display slices.">
 <meta property="og:image" content="assets/icon-512.png">
-<meta name="theme-color" content="#F3F3F1">
+<meta name="theme-color" content="#241636">
 <link rel="icon" type="image/png" href="assets/icon-256.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
     --paper: #F3F3F1;      /* cool paper ground — the artwork carries the color */
@@ -25,8 +25,8 @@
     --bezel: #111318;      /* display bezels */
     --font-d: "Schibsted Grotesk", system-ui, sans-serif;
     --font-b: "Schibsted Grotesk", system-ui, sans-serif;
+    --font-serif: "Instrument Serif", Georgia, serif;
     --font-m: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
-    --maxw: 1320px;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -45,7 +45,7 @@
   a { color: inherit; }
   :focus-visible { outline: 2px solid var(--sel); outline-offset: 3px; border-radius: 2px; }
 
-  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 clamp(18px, 3.4vw, 44px); }
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 0 clamp(18px, 3.4vw, 44px); }
 
   .mono { font-family: var(--font-m); }
   .eyebrow {
@@ -55,27 +55,44 @@
   }
   h2 { font-size: clamp(1.55rem, 2.8vw, 2.15rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
   .lede { color: var(--dim); font-size: 15.5px; max-width: 52ch; margin-top: 10px; }
+  section { scroll-margin-top: 84px; }
 
-  /* ---------- HUD bar ---------- */
-  .hud {
-    position: sticky; top: 0; z-index: 40;
-    background: rgba(243, 243, 241, 0.86);
-    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--hair);
+  /* ---------- floating pill nav ---------- */
+  .pillnav {
+    position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+    z-index: 60;
+    display: flex; align-items: center; gap: 4px;
+    background: rgba(17, 19, 24, 0.82);
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    border-radius: 999px; padding: 6px 7px 6px 16px;
+    box-shadow: 0 14px 36px -14px rgba(10, 8, 20, 0.55), inset 0 1px 0 rgba(255,255,255,0.07);
+    max-width: calc(100vw - 20px);
   }
-  .hud .wrap { display: flex; align-items: center; gap: 18px; height: 52px; }
-  .brand { display: flex; align-items: center; gap: 9px; text-decoration: none; }
+  .brand { display: flex; align-items: center; gap: 9px; text-decoration: none; margin-right: 6px; }
   .brand img { width: 21px; height: 21px; border-radius: 5px; display: block; }
-  .brand b { font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
-  .hud-canvas { font-family: var(--font-m); font-size: 10.5px; color: var(--faint); letter-spacing: 0.06em; }
-  .hud-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
-  .hud-ver { font-family: var(--font-m); font-size: 10.5px; color: var(--faint); letter-spacing: 0.06em; }
-  @media (max-width: 820px) { .hud-canvas { display: none; } }
+  .brand b { font-weight: 700; font-size: 15px; letter-spacing: -0.01em; color: #fff; white-space: nowrap; }
+  .pillnav nav { display: flex; align-items: center; }
+  .pillnav nav a {
+    color: rgba(255, 255, 255, 0.72); font-size: 13.5px; font-weight: 500;
+    text-decoration: none; padding: 7px 11px; border-radius: 999px;
+    transition: color 0.15s, background 0.15s;
+  }
+  .pillnav nav a:hover { color: #fff; background: rgba(255, 255, 255, 0.09); }
+  .pill-cta {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: #fff; color: #0B0D12;
+    font-weight: 600; font-size: 13.5px; text-decoration: none;
+    border-radius: 999px; padding: 8px 16px; margin-left: 6px;
+    transition: transform 0.12s, background 0.15s;
+  }
+  .pill-cta:hover { background: #F1F1EF; }
+  .pill-cta:active { transform: scale(0.97); }
+  @media (max-width: 720px) { .pillnav nav { display: none; } .pillnav { padding-left: 14px; } }
 
   .btn {
     display: inline-flex; align-items: center; gap: 8px;
     font-family: var(--font-b); font-weight: 600; font-size: 14.5px;
-    padding: 10px 20px; border-radius: 8px; text-decoration: none;
+    padding: 12px 24px; border-radius: 999px; text-decoration: none;
     border: 1px solid transparent; cursor: pointer;
     transition: transform 0.12s, background 0.15s, border-color 0.15s;
   }
@@ -84,23 +101,96 @@
   .btn-ink:hover { background: #000; }
   .btn-ghost { border-color: var(--ink); color: var(--ink); background: transparent; }
   .btn-ghost:hover { background: var(--paper-2); }
-  .btn-sm { padding: 7px 14px; font-size: 13.5px; border-radius: 7px; }
 
-  /* ---------- hero: the canvas ---------- */
-  .hero { padding: clamp(34px, 5vw, 64px) 0 0; }
+  /* ---------- hero: the wallpaper is the page ---------- */
+  .hero {
+    position: relative; overflow: hidden;
+    min-height: 100vh; min-height: 100svh;
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center;
+  }
+  .hero-bg {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    pointer-events: none;
+  }
+  .hero-scrim {
+    position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(180deg,
+      rgba(26, 15, 46, 0.42) 0%,
+      rgba(26, 15, 46, 0.2) 34%,
+      rgba(26, 15, 46, 0) 58%);
+  }
+  .hero-inner {
+    position: relative; z-index: 3;
+    padding: clamp(112px, 16vh, 164px) 20px 0;
+    max-width: 880px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 9px;
+    color: #fff; font-weight: 600; font-size: 16.5px; letter-spacing: -0.01em;
+    margin-bottom: 18px;
+  }
+  .hero-eyebrow img { width: 20px; height: 20px; border-radius: 5px; }
+  .hero h1 {
+    color: #fff; letter-spacing: -0.028em; line-height: 0.98;
+    text-shadow: 0 2px 34px rgba(20, 10, 40, 0.45);
+    margin-bottom: 24px;
+  }
+  .hero h1 .l1 {
+    display: block;
+    font-family: var(--font-d); font-weight: 800;
+    font-size: clamp(2.7rem, 7vw, 5.4rem);
+  }
+  .hero h1 .l2 {
+    display: block;
+    font-family: var(--font-serif); font-style: italic; font-weight: 400;
+    font-size: clamp(2.9rem, 7.5vw, 5.9rem);
+    letter-spacing: -0.015em;
+  }
+  .hero-sub {
+    color: rgba(255, 255, 255, 0.88);
+    font-size: clamp(15.5px, 1.5vw, 17.5px);
+    line-height: 1.65;
+    max-width: 56ch;
+    text-shadow: 0 1px 18px rgba(20, 10, 40, 0.4);
+    margin-bottom: 28px;
+  }
+  .hero-cta { margin-bottom: 18px; }
+  .btn-hero {
+    background: #0B0D12; color: #fff;
+    font-size: 16px; padding: 14px 28px;
+    box-shadow: 0 18px 40px -14px rgba(10, 8, 20, 0.6);
+  }
+  .btn-hero:hover { background: #000; }
+  .hero-trust {
+    display: flex; gap: 10px 22px; flex-wrap: wrap; justify-content: center;
+    color: rgba(255, 255, 255, 0.82);
+    font-family: var(--font-m); font-size: 11px; letter-spacing: 0.05em;
+    text-shadow: 0 1px 14px rgba(20, 10, 40, 0.5);
+  }
+
+  /* the product: two displays sitting on the ridge, cropped by the fold like the reference */
+  .stage {
+    position: relative; z-index: 3;
+    margin-top: auto;
+    padding-top: clamp(48px, 7vh, 84px);
+    width: 100%;
+    display: flex; flex-direction: column; align-items: center;
+  }
   .canvas-row {
-    display: flex; justify-content: center; align-items: stretch;
+    display: flex; justify-content: center; align-items: flex-end;
     gap: clamp(10px, 1.2vw, 16px);
     position: relative;
   }
   .frame {
-    width: min(46.5vw, 620px);
+    width: min(42vw, 540px);
     background: var(--bezel);
     border-radius: clamp(10px, 1.2vw, 16px);
     padding: clamp(6px, 0.7vw, 10px);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.08),
-      0 24px 48px -20px rgba(23, 25, 30, 0.45);
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      0 34px 70px -18px rgba(12, 8, 28, 0.65);
     transition: transform 0.5s cubic-bezier(0.2, 1, 0.3, 1);
   }
   .screen { position: relative; overflow: hidden; aspect-ratio: 8 / 5; border-radius: 7px; background: #101014; }
@@ -117,24 +207,6 @@
   .slice-l .slice-art { left: 0; }
   .slice-r .slice-art { right: 0; }
 
-  /* headline split across the seam — the sentence crosses the bezel gap like the wallpaper does */
-  .hero-title {
-    position: absolute; left: 0; right: 0; bottom: clamp(8%, 9%, 11%);
-    display: grid; grid-template-columns: 1fr 1fr;
-    gap: clamp(10px, 1.2vw, 16px);
-    pointer-events: none; z-index: 3;
-    color: #FFF9EF;
-    font-family: var(--font-d); font-weight: 800;
-    font-size: clamp(1.55rem, 4.6vw, 4.05rem);
-    line-height: 1.02; letter-spacing: -0.025em;
-    text-shadow: 0 2px 28px rgba(10, 8, 24, 0.45);
-  }
-  .hero-title .t-l { text-align: right; padding-right: clamp(10px, 1.8vw, 26px); }
-  .hero-title .t-r { padding-left: clamp(10px, 1.8vw, 26px); }
-  @media (max-width: 480px) {
-    .hero-title { font-size: clamp(1.05rem, 5.4vw, 1.55rem); bottom: 7%; }
-  }
-
   .slice-tag {
     position: absolute; top: 8px; left: 8px; z-index: 4;
     font-family: var(--font-m); font-size: 9.5px; letter-spacing: 0.04em;
@@ -147,43 +219,40 @@
   .stage.slices .slice-tag { opacity: 1; transform: none; }
   .slice-tag em { font-style: normal; color: #9A9DA3; }
 
-  /* ruler under the canvas */
-  .ruler { position: relative; margin: 14px auto 0; width: min(93.6vw, 1256px); height: 34px; }
-  .ruler::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: var(--hair); }
-  .tick { position: absolute; top: 0; width: 1px; height: 7px; background: var(--faint); }
+  /* ruler + HUD, restyled for the dark wallpaper ground */
+  .ruler { position: relative; margin: 16px auto 0; width: var(--roww); height: 32px; }
+  .ruler::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: rgba(255, 255, 255, 0.28); }
+  .tick { position: absolute; top: 0; width: 1px; height: 7px; background: rgba(255, 255, 255, 0.45); }
   .tick.seam { height: 11px; background: var(--sel); width: 1.5px; }
   .tick-l {
     position: absolute; top: 11px; transform: translateX(-50%);
-    font-family: var(--font-m); font-size: 9.5px; color: var(--faint); letter-spacing: 0.05em;
-    white-space: nowrap;
+    font-family: var(--font-m); font-size: 9.5px; color: rgba(255, 255, 255, 0.6);
+    letter-spacing: 0.05em; white-space: nowrap;
   }
-  .tick-l.seam { color: var(--sel); font-weight: 500; }
+  .tick-l.seam { color: #FF8A70; font-weight: 500; }
   .tick-l.edge-l { transform: none; }
   .tick-l.edge-r { transform: translateX(-100%); }
 
   .stage-hud {
     display: flex; justify-content: space-between; align-items: baseline;
-    gap: 18px; margin: 6px auto 0; width: min(93.6vw, 1256px);
+    gap: 18px; margin: 4px auto 0; width: var(--roww);
   }
-  .readout { font-family: var(--font-m); font-size: 11px; color: var(--faint); letter-spacing: 0.04em; }
-  .readout b { color: var(--dim); font-weight: 500; }
+  .readout { font-family: var(--font-m); font-size: 11px; color: rgba(255, 255, 255, 0.55); letter-spacing: 0.04em; text-align: left; }
+  .readout b { color: rgba(255, 255, 255, 0.85); font-weight: 500; }
   .mode-toggle {
     font-family: var(--font-m); font-size: 11px; letter-spacing: 0.04em;
-    color: var(--dim); background: none; border: none; cursor: pointer;
-    text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--hair);
+    color: rgba(255, 255, 255, 0.75); background: none; border: none; cursor: pointer;
+    text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(255, 255, 255, 0.3);
     padding: 2px 0;
   }
-  .mode-toggle:hover { color: var(--ink); text-decoration-color: var(--sel); }
-
-  .hero-foot {
-    display: flex; justify-content: space-between; align-items: flex-end; gap: 28px;
-    padding: clamp(40px, 5vw, 64px) 0 clamp(56px, 7vw, 88px);
-    flex-wrap: wrap;
+  .mode-toggle:hover { color: #fff; text-decoration-color: var(--sel); }
+  .stage-hint {
+    font-family: var(--font-m); font-size: 10.5px; color: rgba(255, 255, 255, 0.45);
+    letter-spacing: 0.04em; margin: 10px 0 clamp(20px, 3vh, 34px);
   }
-  .hero-foot .lede { margin: 0; max-width: 46ch; }
-  .hero-ctas { display: flex; gap: 10px; flex-wrap: wrap; }
+  @media (max-width: 640px) { .stage-hint { display: none; } }
 
-  /* ---------- layers / inspector ---------- */
+  /* ---------- sections on paper ---------- */
   .section { border-top: 1px solid var(--hair); padding: clamp(56px, 8vw, 104px) 0; }
 
   .layers-grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
@@ -296,7 +365,8 @@
 <body>
 
 <!-- The panorama: dawn on the left display, dusk on the right, the sun straddling the seam.
-     Drawn once at the true aspect of the two-screen canvas (2 × 8:5). -->
+     Drawn once at the true aspect of the two-screen canvas (2 × 8:5) and reused everywhere —
+     including as the hero background itself. -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="1" y2="0">
@@ -345,6 +415,47 @@
       <path d="M0 796 L170 742 L340 784 L520 716 L700 772 L880 730 L1060 776 L1240 722 L1400 762 L1600 736 L1780 766 L1960 716 L2140 768 L2320 726 L2500 774 L2680 730 L2860 778 L3040 738 L3200 764 L3200 1000 L0 1000 Z" fill="url(#ridgeA)"/>
       <path d="M0 884 L220 850 L420 878 L640 842 L860 872 L1080 846 L1300 874 L1520 844 L1740 872 L1960 842 L2180 870 L2400 844 L2620 872 L2840 846 L3060 872 L3200 856 L3200 1000 L0 1000 Z" fill="#191231"/>
     </symbol>
+    <!-- Taller variant for the hero background: extra sky above, so the sun sets
+         behind the displays instead of behind the headline, and narrow viewports
+         don't mega-zoom into the artwork. -->
+    <linearGradient id="duskTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0"    stop-color="#241542" stop-opacity="0.62"/>
+      <stop offset="0.38" stop-color="#241542" stop-opacity="0.18"/>
+      <stop offset="0.55" stop-color="#241542" stop-opacity="0"/>
+    </linearGradient>
+    <symbol id="panoHero" viewBox="0 0 3200 1800" preserveAspectRatio="xMidYMid slice">
+      <rect width="3200" height="1800" fill="url(#sky)"/>
+      <rect width="3200" height="1800" fill="url(#duskTop)"/>
+      <g fill="#FFF6E8">
+        <circle cx="260" cy="240" r="2.4"/><circle cx="150" cy="420" r="1.6"/>
+        <circle cx="420" cy="130" r="1.8"/><circle cx="620" cy="560" r="1.4"/>
+        <circle cx="2940" cy="220" r="2.4"/><circle cx="3060" cy="400" r="1.6"/>
+        <circle cx="2760" cy="110" r="1.8"/><circle cx="2560" cy="520" r="1.4"/>
+      </g>
+      <g transform="translate(0,800)">
+        <ellipse cx="1600" cy="470" rx="215" ry="200" fill="url(#glow)"/>
+        <g fill="#FFF6E8">
+          <circle cx="210" cy="90" r="2"/><circle cx="120" cy="160" r="1.4"/>
+          <circle cx="330" cy="55" r="1.5"/><circle cx="2990" cy="80" r="2"/>
+          <circle cx="3090" cy="150" r="1.4"/><circle cx="2870" cy="45" r="1.6"/>
+        </g>
+        <g filter="url(#soft)">
+          <rect x="120" y="300" width="640" height="15" rx="7.5" fill="#FFD9A8" opacity="0.5"/>
+          <rect x="420" y="215" width="480" height="11" rx="5.5" fill="#FFE8C4" opacity="0.38"/>
+          <rect x="760" y="128" width="360" height="9" rx="4.5" fill="#FFE9CD" opacity="0.3"/>
+          <rect x="1980" y="240" width="640" height="14" rx="7" fill="#C9D6FF" opacity="0.42"/>
+          <rect x="2280" y="150" width="520" height="10" rx="5" fill="#DCE4FF" opacity="0.34"/>
+          <rect x="2120" y="330" width="420" height="12" rx="6" fill="#BFCFFF" opacity="0.3"/>
+        </g>
+        <g stroke="#3A2A4E" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.75">
+          <path d="M1260 170 q14 -14 28 0 M1288 170 q14 -14 28 0"/>
+          <path d="M1900 120 q12 -12 24 0 M1924 120 q12 -12 24 0"/>
+        </g>
+        <circle cx="1600" cy="470" r="100" fill="#FFF7E2"/>
+        <path d="M0 796 L170 742 L340 784 L520 716 L700 772 L880 730 L1060 776 L1240 722 L1400 762 L1600 736 L1780 766 L1960 716 L2140 768 L2320 726 L2500 774 L2680 730 L2860 778 L3040 738 L3200 764 L3200 1000 L0 1000 Z" fill="url(#ridgeA)"/>
+        <path d="M0 884 L220 850 L420 878 L640 842 L860 872 L1080 846 L1300 874 L1520 844 L1740 872 L1960 842 L2180 870 L2400 844 L2620 872 L2840 846 L3060 872 L3200 856 L3200 1000 L0 1000 Z" fill="#191231"/>
+      </g>
+    </symbol>
     <linearGradient id="psky" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0" stop-color="#F0694A"/>
       <stop offset="0.45" stop-color="#FFD9A3"/>
@@ -362,24 +473,45 @@
   </defs>
 </svg>
 
-<header class="hud">
-  <div class="wrap">
-    <a class="brand" href="#top" aria-label="Spanorama — back to top">
-      <img src="assets/icon-256.png" alt="">
-      <b>Spanorama</b>
-    </a>
-    <span class="hud-canvas">canvas 5120 × 1440 · macOS 14+</span>
-    <div class="hud-right">
-      <span class="hud-ver">v0.1.0 · MIT</span>
-      <a class="btn btn-ink btn-sm" href="#" data-repo-path="/releases/latest">Download</a>
-    </div>
-  </div>
+<!-- Floating pill nav, like a HUD over the wallpaper -->
+<header class="pillnav">
+  <a class="brand" href="#top" aria-label="Spanorama — back to top">
+    <img src="assets/icon-256.png" alt="">
+    <b>Spanorama</b>
+  </a>
+  <nav aria-label="Sections">
+    <a href="#layers">Features</a>
+    <a href="#how">Pipeline</a>
+    <a href="#install">Install</a>
+  </nav>
+  <a class="pill-cta" href="#" data-repo-path="/releases/latest"><span aria-hidden="true"></span>Download</a>
 </header>
 
 <main id="top">
-  <!-- ============ THE CANVAS ============ -->
-  <section class="hero" aria-label="Spanorama in one picture">
-    <div class="stage" id="stage">
+  <!-- ============ HERO: THE WALLPAPER IS THE PAGE ============ -->
+  <section class="hero" aria-label="Spanorama — one image, every display">
+    <svg class="hero-bg" viewBox="0 0 3200 1800" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#panoHero"/></svg>
+    <div class="hero-scrim" aria-hidden="true"></div>
+
+    <div class="hero-inner">
+      <p class="hero-eyebrow"><img src="assets/icon-256.png" alt=""> Panorama wallpapers</p>
+      <h1>
+        <span class="l1">One image.</span>
+        <span class="l2">Every display.</span>
+      </h1>
+      <p class="hero-sub">Spanorama is a free, open-source macOS app that spans one panorama across all your displays and places every image exactly where you want it — applied at native Retina quality, pixel-perfect down to the seam.</p>
+      <div class="hero-cta">
+        <a class="btn btn-hero" href="#" data-repo-path="/releases/latest"><span aria-hidden="true"></span>Download for macOS</a>
+      </div>
+      <p class="hero-trust">
+        <span>Free &amp; open source — MIT</span>
+        <span>macOS 14 Sonoma or later</span>
+        <span>No Xcode required</span>
+      </p>
+    </div>
+
+    <!-- the product: your displays with the wallpaper applied, sitting on the ridge -->
+    <div class="stage" id="stage" style="--roww: calc(min(42vw, 540px) * 2 + clamp(10px, 1.2vw, 16px));">
       <div class="canvas-row">
         <div class="frame frame-l">
           <div class="screen">
@@ -397,10 +529,6 @@
             <span class="slice-tag">Spanorama-2.png <em>· 2560 × 1440 @2×</em></span>
           </div>
         </div>
-        <h1 class="hero-title" aria-label="One picture, every display.">
-          <span class="t-l">One picture</span>
-          <span class="t-r">every&nbsp;display.</span>
-        </h1>
       </div>
 
       <div class="ruler" aria-hidden="true">
@@ -415,14 +543,7 @@
         <p class="readout" id="readout">union <b>5120 × 1440</b> · displays at <b>x −2560</b>, <b>x 0</b></p>
         <button class="mode-toggle" type="button" id="mode-toggle">show the slices</button>
       </div>
-    </div>
-
-    <div class="wrap hero-foot">
-      <p class="lede">Spanorama is a free, open-source macOS app that spans one image across all your displays, places pictures exactly where you want them, and applies each slice at native Retina quality. Move your pointer over the canvas — both halves pan in lockstep, because each display gets its own file and they stay aligned.</p>
-      <div class="hero-ctas">
-        <a class="btn btn-ink" href="#" data-repo-path="/releases/latest">Download v0.1.0</a>
-        <a class="btn btn-ghost" href="#install">Build from source</a>
-      </div>
+      <p class="stage-hint">move your pointer over the displays — both halves pan in lockstep, because each screen gets its own file</p>
     </div>
   </section>
 

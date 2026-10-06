@@ -8,6 +8,13 @@ where you want them, and compose your own desktop from several images.
 
 Inspired by [Fresco](http://glimmir.com/) — reimagined as a modern, MIT-licensed app.
 
+## Download
+
+Grab the latest build from [Releases](https://github.com/iamshakibali/Spanorama/releases).
+Every push to `main` produces an automated prerelease build; tagged versions
+(`v*`) are stable releases. The zip is ad-hoc signed — right-click the app →
+**Open** on first launch, or run `xattr -cr Spanorama.app`.
+
 ## Features
 
 - **Panorama spanning** — add one image and it covers the entire canvas of all

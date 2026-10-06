@@ -16,11 +16,10 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BINARY" "$APP/Contents/MacOS/Spanorama"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 
-if [ -f build/AppIcon.icns ]; then
-  cp build/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
-else
-  echo "note: build/AppIcon.icns missing — run Scripts/make-icon.sh first" >&2
+if [ ! -f build/AppIcon.icns ]; then
+  ./Scripts/make-icon.sh
 fi
+cp build/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 
 # Ad-hoc signature so the bundle launches cleanly locally.
 codesign --force --sign - "$APP"
