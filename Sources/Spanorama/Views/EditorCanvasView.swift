@@ -94,8 +94,18 @@ final class EditorCanvas: NSView {
         // Screen rectangles
         for screen in model.screenService.screens {
             let rect = transform.toView(screen.frame)
+
+            // Soft drop shadow, like an artboard in a design tool.
+            NSGraphicsContext.current?.saveGraphicsState()
+            let shadow = NSShadow()
+            shadow.shadowColor = NSColor.black.withAlphaComponent(0.28)
+            shadow.shadowBlurRadius = 6
+            shadow.shadowOffset = NSSize(width: 0, height: -2)
+            shadow.set()
             NSColor.textBackgroundColor.setFill()
             NSBezierPath(rect: rect).fill()
+            NSGraphicsContext.current?.restoreGraphicsState()
+
             NSColor.gridColor.setStroke()
             let border = NSBezierPath(rect: rect)
             border.lineWidth = 1
@@ -135,7 +145,7 @@ final class EditorCanvas: NSView {
 
         if model.document.layers.isEmpty {
             drawCenteredText(
-                "Add images with the buttons above, then press ⌘R to apply them to your desktop",
+                "Add images from the toolbar, then press ⌘R to apply them to your desktop",
                 in: bounds
             )
         }

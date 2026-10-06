@@ -108,6 +108,21 @@ final class EditorModel: ObservableObject {
 
     // MARK: - Layer editing
 
+    /// Starts a fresh layout.
+    func newLayout() {
+        document = CanvasDocument()
+        selectedLayerID = nil
+        lastStatus = "New layout"
+    }
+
+    func arrangeSelected(_ direction: ArrangeDirection) {
+        guard let id = selectedLayerID else { return }
+        switch direction {
+        case .front: bringToFront(id)
+        case .back: sendToBack(id)
+        }
+    }
+
     func removeSelected() {
         guard let id = selectedLayerID else { return }
         removeLayer(with: id)
@@ -324,6 +339,11 @@ extension CGPoint {
     func applyingTranslation(_ delta: CGSize) -> CGPoint {
         CGPoint(x: x + delta.width, y: y + delta.height)
     }
+}
+
+enum ArrangeDirection {
+    case front
+    case back
 }
 
 enum FileDialogs {
