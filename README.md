@@ -18,6 +18,15 @@ Every push to `main` produces an automated prerelease build; tagged versions
 app into Applications. The build is ad-hoc signed — right-click the app →
 **Open** on first launch, or run `xattr -cr /Applications/Spanorama.app`.
 
+### One-line install
+
+Or skip the manual steps — this downloads the latest release, installs it into
+`/Applications`, and launches Spanorama:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/iamshakibali/Spanorama/main/Scripts/install.sh | bash
+```
+
 ## Features
 
 - **Panorama spanning** — add one image and it covers the entire canvas of all
