@@ -1,6 +1,8 @@
-# Spanorama
-
-**A free, open-source macOS app to position wallpaper & panorama images freely.**
+<div align="center">
+  <img src="docs/assets/icon-256.png" width="128" alt="Spanorama app icon">
+  <h1>Spanorama</h1>
+  <p><strong>A free, open-source macOS app to position wallpaper & panorama images freely.</strong></p>
+</div>
 
 Spanorama gives you control over the desktop picture that macOS doesn't: span a
 panorama across multiple displays seamlessly, resize and position images exactly
