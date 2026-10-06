@@ -258,11 +258,15 @@ final class EditorModel: ObservableObject {
             guard let nsScreen = screenService.nsScreen(for: screen),
                   let urlString = defaults.string(forKey: Self.originalKey(for: screen.id)),
                   let url = URL(string: urlString) else { continue }
+            // Restore the options captured alongside the URL; fall back to
+            // full-screen cover scaling. Proportional scaling alone letterboxes
+            // the image (empty space shows the fill color) without allowClipping.
+            let options = Self.loadStoredOptions(screenID: screen.id) ?? StoredDesktopOptions.coverFallback
             do {
                 try NSWorkspace.shared.setDesktopImageURL(
                     url,
                     for: nsScreen,
-                    options: [.imageScaling: NSNumber(value: NSImageScaling.scaleProportionallyUpOrDown.rawValue)]
+                    options: options
                 )
                 restored += 1
             } catch {
@@ -276,6 +280,18 @@ final class EditorModel: ObservableObject {
         "originalWallpaper.\(screenID)"
     }
 
+    private static func optionsKey(for screenID: String) -> String {
+        "originalWallpaperOptions.\(screenID)"
+    }
+
+    private static func loadStoredOptions(screenID: String) -> [NSWorkspace.DesktopImageOptionKey: Any]? {
+        guard let data = UserDefaults.standard.data(forKey: optionsKey(for: screenID)),
+              let stored = try? JSONDecoder().decode(StoredDesktopOptions.self, from: data) else {
+            return nil
+        }
+        return stored.toOptions()
+    }
+
     private func captureOriginalWallpapersIfNeeded() {
         let defaults = UserDefaults.standard
         for screen in screenService.screens {
@@ -283,7 +299,14 @@ final class EditorModel: ObservableObject {
             guard defaults.string(forKey: key) == nil,
                   let nsScreen = screenService.nsScreen(for: screen),
                   let current = NSWorkspace.shared.desktopImageURL(for: nsScreen) else { continue }
+            // Never capture our own temp wallpapers as "the original".
+            if current.path.contains("/Spanorama/") { continue }
             defaults.set(current.absoluteString, forKey: key)
+            if let options = NSWorkspace.shared.desktopImageOptions(for: nsScreen),
+               let stored = StoredDesktopOptions(options: options),
+               let data = try? JSONEncoder().encode(stored) {
+                defaults.set(data, forKey: Self.optionsKey(for: screen.id))
+            }
         }
     }
 
@@ -344,6 +367,46 @@ extension CGPoint {
 enum ArrangeDirection {
     case front
     case back
+}
+
+/// Codable snapshot of a display's desktop-image options, so a reset can
+/// restore exactly how macOS had the wallpaper configured.
+struct StoredDesktopOptions: Codable {
+    var scalingRawValue: Int?
+    var allowClipping: Bool?
+    var fillRed: Double?
+    var fillGreen: Double?
+    var fillBlue: Double?
+    var fillAlpha: Double?
+
+    init?(options: [NSWorkspace.DesktopImageOptionKey: Any]) {
+        guard !options.isEmpty else { return nil }
+        if let number = options[.imageScaling] as? NSNumber { scalingRawValue = number.intValue }
+        if let number = options[.allowClipping] as? NSNumber { allowClipping = number.boolValue }
+        if let color = options[.fillColor] as? NSColor,
+           let rgb = color.usingColorSpaceName(.calibratedRGB) {
+            fillRed = Double(rgb.redComponent)
+            fillGreen = Double(rgb.greenComponent)
+            fillBlue = Double(rgb.blueComponent)
+            fillAlpha = Double(rgb.alphaComponent)
+        }
+    }
+
+    func toOptions() -> [NSWorkspace.DesktopImageOptionKey: Any] {
+        var options: [NSWorkspace.DesktopImageOptionKey: Any] = [:]
+        if let value = scalingRawValue { options[.imageScaling] = NSNumber(value: value) }
+        if let value = allowClipping { options[.allowClipping] = NSNumber(value: value) }
+        if let red = fillRed, let green = fillGreen, let blue = fillBlue, let alpha = fillAlpha {
+            options[.fillColor] = NSColor(calibratedRed: red, green: green, blue: blue, alpha: alpha)
+        }
+        return options
+    }
+
+    /// Full-screen cover (clips overflow) for when no original options were captured.
+    static let coverFallback: [NSWorkspace.DesktopImageOptionKey: Any] = [
+        .imageScaling: NSNumber(value: NSImageScaling.scaleProportionallyUpOrDown.rawValue),
+        .allowClipping: NSNumber(value: true)
+    ]
 }
 
 enum FileDialogs {
