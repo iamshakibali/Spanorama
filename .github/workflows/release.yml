@@ -24,7 +24,8 @@ jobs:
       - name: Zip app bundle
         run: ditto -c -k --sequesterRsrc --keepParent dist/Spanorama.app dist/Spanorama.zip
 
-      - name: Decide release tag        id: tag
+      - name: Decide release tag
+        id: tag
         run: |
           if [[ "$GITHUB_REF" == "refs/tags/v"* ]]; then
             echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
