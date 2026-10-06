@@ -24,8 +24,7 @@ jobs:
       - name: Zip app bundle
         run: ditto -c -k --sequesterRsrc --keepParent dist/Spanorama.app dist/Spanorama.zip
 
-      - name: Decide release tag
-        id: tag
+      - name: Decide release tag        id: tag
         run: |
           if [[ "$GITHUB_REF" == "refs/tags/v"* ]]; then
             echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
@@ -44,8 +43,9 @@ jobs:
           if [ "${{ steps.tag.outputs.prerelease }}" = "true" ]; then
             args+=(--prerelease)
           fi
-          gh release create "${{ steps.tag.outputs.tag }}" dist/Spanorama.zip \
+          gh release create "${{ steps.tag.outputs.tag }}" \
+            dist/Spanorama.dmg dist/Spanorama.zip \
             --title "Spanorama ${{ steps.tag.outputs.tag }}" \
-            --notes "Requires macOS 14+. This build is ad-hoc signed: on first launch, right-click Spanorama.app → Open, or run \`xattr -cr Spanorama.app\`." \
+            --notes "Requires macOS 14+. Install: open Spanorama.dmg and drag Spanorama into the Applications folder. This build is ad-hoc signed — on first launch, right-click Spanorama.app → Open, or run \`xattr -cr /Applications/Spanorama.app\`." \
             --generate-notes \
             "${args[@]}"

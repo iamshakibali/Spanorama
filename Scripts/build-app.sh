@@ -24,5 +24,13 @@ cp build/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 # Ad-hoc signature so the bundle launches cleanly locally.
 codesign --force --sign - "$APP"
 
-echo "Built $APP"
+# Drag-to-install DMG: app next to an Applications symlink.
+STAGING="build/dmg-staging"
+rm -rf "$STAGING"
+mkdir -p "$STAGING"
+cp -R "$APP" "$STAGING/"
+ln -s /Applications "$STAGING/Applications"
+hdiutil create -volname "Spanorama" -srcfolder "$STAGING" -ov -format UDZO "dist/Spanorama.dmg" >/dev/null
+
+echo "Built $APP and dist/Spanorama.dmg"
 echo "Open with: open $APP"

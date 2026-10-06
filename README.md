@@ -12,8 +12,9 @@ Inspired by [Fresco](http://glimmir.com/) — reimagined as a modern, MIT-licens
 
 Grab the latest build from [Releases](https://github.com/iamshakibali/Spanorama/releases).
 Every push to `main` produces an automated prerelease build; tagged versions
-(`v*`) are stable releases. The zip is ad-hoc signed — right-click the app →
-**Open** on first launch, or run `xattr -cr Spanorama.app`.
+(`v*`) are stable releases. Download **Spanorama.dmg**, open it, and drag the
+app into Applications. The build is ad-hoc signed — right-click the app →
+**Open** on first launch, or run `xattr -cr /Applications/Spanorama.app`.
 
 ## Features
 
