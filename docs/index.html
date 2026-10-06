@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spanorama — One picture, every display</title>
+<meta name="description" content="Spanorama is a free, open-source macOS app that spans one panorama across all your displays, places images exactly where you want them, and applies each slice at native Retina quality — pixel-perfect down to the seam.">
+<meta property="og:title" content="Spanorama — One picture, every display">
+<meta property="og:description" content="A free, open-source macOS app for wallpapers that cross the bezel: panorama spanning, free positioning, pixel-perfect per-display slices.">
+<meta property="og:image" content="assets/icon-512.png">
+<meta name="theme-color" content="#F3F3F1">
+<link rel="icon" type="image/png" href="assets/icon-256.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F3F3F1;      /* cool paper ground — the artwork carries the color */
+    --paper-2: #EBEBE8;    /* hover wash */
+    --ink: #17191E;        /* text */
+    --dim: #5F636B;        /* secondary text */
+    --faint: #9A9DA3;      /* tertiary / metadata */
+    --hair: #DCDCD7;       /* hairlines */
+    --sel: #FF5436;        /* selection hardware — canvas-tool coral */
+    --bezel: #111318;      /* display bezels */
+    --font-d: "Schibsted Grotesk", system-ui, sans-serif;
+    --font-b: "Schibsted Grotesk", system-ui, sans-serif;
+    --font-m: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --maxw: 1320px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { background: var(--paper); scroll-behavior: smooth; }
+
+  body {
+    color: var(--ink);
+    font-family: var(--font-b);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  ::selection { background: rgba(255, 84, 54, 0.22); }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--sel); outline-offset: 3px; border-radius: 2px; }
+
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 clamp(18px, 3.4vw, 44px); }
+
+  .mono { font-family: var(--font-m); }
+  .eyebrow {
+    font-family: var(--font-m); font-size: 10.5px; font-weight: 500;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--faint);
+    display: block; margin-bottom: 14px;
+  }
+  h2 { font-size: clamp(1.55rem, 2.8vw, 2.15rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
+  .lede { color: var(--dim); font-size: 15.5px; max-width: 52ch; margin-top: 10px; }
+
+  /* ---------- HUD bar ---------- */
+  .hud {
+    position: sticky; top: 0; z-index: 40;
+    background: rgba(243, 243, 241, 0.86);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--hair);
+  }
+  .hud .wrap { display: flex; align-items: center; gap: 18px; height: 52px; }
+  .brand { display: flex; align-items: center; gap: 9px; text-decoration: none; }
+  .brand img { width: 21px; height: 21px; border-radius: 5px; display: block; }
+  .brand b { font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
+  .hud-canvas { font-family: var(--font-m); font-size: 10.5px; color: var(--faint); letter-spacing: 0.06em; }
+  .hud-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+  .hud-ver { font-family: var(--font-m); font-size: 10.5px; color: var(--faint); letter-spacing: 0.06em; }
+  @media (max-width: 820px) { .hud-canvas { display: none; } }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--font-b); font-weight: 600; font-size: 14.5px;
+    padding: 10px 20px; border-radius: 8px; text-decoration: none;
+    border: 1px solid transparent; cursor: pointer;
+    transition: transform 0.12s, background 0.15s, border-color 0.15s;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-ink { background: var(--ink); color: var(--paper); }
+  .btn-ink:hover { background: #000; }
+  .btn-ghost { border-color: var(--ink); color: var(--ink); background: transparent; }
+  .btn-ghost:hover { background: var(--paper-2); }
+  .btn-sm { padding: 7px 14px; font-size: 13.5px; border-radius: 7px; }
+
+  /* ---------- hero: the canvas ---------- */
+  .hero { padding: clamp(34px, 5vw, 64px) 0 0; }
+  .canvas-row {
+    display: flex; justify-content: center; align-items: stretch;
+    gap: clamp(10px, 1.2vw, 16px);
+    position: relative;
+  }
+  .frame {
+    width: min(46.5vw, 620px);
+    background: var(--bezel);
+    border-radius: clamp(10px, 1.2vw, 16px);
+    padding: clamp(6px, 0.7vw, 10px);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 24px 48px -20px rgba(23, 25, 30, 0.45);
+    transition: transform 0.5s cubic-bezier(0.2, 1, 0.3, 1);
+  }
+  .screen { position: relative; overflow: hidden; aspect-ratio: 8 / 5; border-radius: 7px; background: #101014; }
+  .stage.slices .frame-l { transform: translateX(calc(clamp(10px, 1.2vw, 16px) * -1.5)); }
+  .stage.slices .frame-r { transform: translateX(calc(clamp(10px, 1.2vw, 16px) * 1.5)); }
+  .stage.slices .screen { outline: 1.5px dashed rgba(255, 255, 255, 0.65); outline-offset: -6px; }
+
+  .slice { position: absolute; inset: 0; overflow: hidden; }
+  .slice-art {
+    position: absolute; top: 0; height: 100%; width: 200%;
+    transform: translate3d(calc(var(--panx, 0) * 1px), calc(var(--pany, 0) * 1px), 0) scale(1.09);
+    will-change: transform;
+  }
+  .slice-l .slice-art { left: 0; }
+  .slice-r .slice-art { right: 0; }
+
+  /* headline split across the seam — the sentence crosses the bezel gap like the wallpaper does */
+  .hero-title {
+    position: absolute; left: 0; right: 0; bottom: clamp(8%, 9%, 11%);
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: clamp(10px, 1.2vw, 16px);
+    pointer-events: none; z-index: 3;
+    color: #FFF9EF;
+    font-family: var(--font-d); font-weight: 800;
+    font-size: clamp(1.55rem, 4.6vw, 4.05rem);
+    line-height: 1.02; letter-spacing: -0.025em;
+    text-shadow: 0 2px 28px rgba(10, 8, 24, 0.45);
+  }
+  .hero-title .t-l { text-align: right; padding-right: clamp(10px, 1.8vw, 26px); }
+  .hero-title .t-r { padding-left: clamp(10px, 1.8vw, 26px); }
+  @media (max-width: 480px) {
+    .hero-title { font-size: clamp(1.05rem, 5.4vw, 1.55rem); bottom: 7%; }
+  }
+
+  .slice-tag {
+    position: absolute; top: 8px; left: 8px; z-index: 4;
+    font-family: var(--font-m); font-size: 9.5px; letter-spacing: 0.04em;
+    color: #F3F3F1; background: rgba(17, 19, 24, 0.82);
+    border-radius: 5px; padding: 3px 8px;
+    opacity: 0; transform: translateY(-4px);
+    transition: opacity 0.3s 0.12s, transform 0.3s 0.12s;
+    pointer-events: none;
+  }
+  .stage.slices .slice-tag { opacity: 1; transform: none; }
+  .slice-tag em { font-style: normal; color: #9A9DA3; }
+
+  /* ruler under the canvas */
+  .ruler { position: relative; margin: 14px auto 0; width: min(93.6vw, 1256px); height: 34px; }
+  .ruler::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: var(--hair); }
+  .tick { position: absolute; top: 0; width: 1px; height: 7px; background: var(--faint); }
+  .tick.seam { height: 11px; background: var(--sel); width: 1.5px; }
+  .tick-l {
+    position: absolute; top: 11px; transform: translateX(-50%);
+    font-family: var(--font-m); font-size: 9.5px; color: var(--faint); letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+  .tick-l.seam { color: var(--sel); font-weight: 500; }
+  .tick-l.edge-l { transform: none; }
+  .tick-l.edge-r { transform: translateX(-100%); }
+
+  .stage-hud {
+    display: flex; justify-content: space-between; align-items: baseline;
+    gap: 18px; margin: 6px auto 0; width: min(93.6vw, 1256px);
+  }
+  .readout { font-family: var(--font-m); font-size: 11px; color: var(--faint); letter-spacing: 0.04em; }
+  .readout b { color: var(--dim); font-weight: 500; }
+  .mode-toggle {
+    font-family: var(--font-m); font-size: 11px; letter-spacing: 0.04em;
+    color: var(--dim); background: none; border: none; cursor: pointer;
+    text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--hair);
+    padding: 2px 0;
+  }
+  .mode-toggle:hover { color: var(--ink); text-decoration-color: var(--sel); }
+
+  .hero-foot {
+    display: flex; justify-content: space-between; align-items: flex-end; gap: 28px;
+    padding: clamp(40px, 5vw, 64px) 0 clamp(56px, 7vw, 88px);
+    flex-wrap: wrap;
+  }
+  .hero-foot .lede { margin: 0; max-width: 46ch; }
+  .hero-ctas { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* ---------- layers / inspector ---------- */
+  .section { border-top: 1px solid var(--hair); padding: clamp(56px, 8vw, 104px) 0; }
+
+  .layers-grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
+  @media (max-width: 900px) { .layers-grid { grid-template-columns: 1fr; } }
+
+  .inspector { border-top: 1px solid var(--hair); }
+  .row {
+    display: grid; grid-template-columns: 1fr auto; gap: 4px 20px;
+    padding: 15px 10px 14px 14px; border-bottom: 1px solid var(--hair);
+    position: relative;
+  }
+  .row::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: -1px; width: 2px;
+    background: var(--sel); transform: scaleY(0); transition: transform 0.18s; transform-origin: top;
+  }
+  .row:hover { background: var(--paper-2); }
+  .row:hover::before { transform: scaleY(1); }
+  .row h3 { font-size: 15.5px; font-weight: 600; letter-spacing: -0.01em; align-self: end; }
+  .row .meta { font-family: var(--font-m); font-size: 10.5px; color: var(--faint); letter-spacing: 0.04em; align-self: end; text-align: right; white-space: nowrap; }
+  .row p { grid-column: 1 / -1; font-size: 13.5px; color: var(--dim); max-width: 58ch; }
+
+  /* selected-layer demo */
+  .sel-demo { position: sticky; top: 84px; }
+  @media (max-width: 900px) { .sel-demo { position: static; } }
+  .sel-frame {
+    background: var(--bezel); border-radius: 14px; padding: 8px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 24px 48px -20px rgba(23,25,30,0.45);
+  }
+  .sel-screen { position: relative; aspect-ratio: 8 / 5; border-radius: 7px; overflow: hidden; }
+  .sel-screen svg.art { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .sel-rect {
+    position: absolute; left: 18%; top: 22%; width: 52%; height: 56%;
+    outline: 1.5px dashed var(--sel);
+  }
+  .handle {
+    position: absolute; width: 7px; height: 7px; background: var(--paper);
+    border: 1.5px solid var(--sel); border-radius: 1px;
+  }
+  .h-tl { left: -4px; top: -4px; } .h-tr { right: -4px; top: -4px; }
+  .h-bl { left: -4px; bottom: -4px; } .h-br { right: -4px; bottom: -4px; }
+  .sel-tag {
+    position: absolute; left: 0; top: -24px;
+    font-family: var(--font-m); font-size: 9.5px; color: var(--sel);
+    letter-spacing: 0.05em; white-space: nowrap;
+  }
+  .sel-caption { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
+  .fit-chip {
+    font-family: var(--font-m); font-size: 10.5px; letter-spacing: 0.06em;
+    color: var(--dim); border: 1px solid var(--hair); border-radius: 99px; padding: 4px 12px;
+  }
+  .fit-chip.on { border-color: var(--ink); color: var(--ink); }
+  .sel-note { font-family: var(--font-m); font-size: 10.5px; color: var(--faint); margin-top: 12px; letter-spacing: 0.03em; }
+
+  /* ---------- pipeline ---------- */
+  .pipe { margin-top: clamp(36px, 5vw, 56px); overflow-x: auto; }
+  .pipe svg { width: 100%; min-width: 760px; height: auto; display: block; }
+  .pipe-note { font-family: var(--font-m); font-size: 11px; color: var(--faint); letter-spacing: 0.03em; margin-top: 18px; max-width: 78ch; }
+  .pipe-note b { color: var(--dim); font-weight: 500; }
+
+  /* ---------- keys ---------- */
+  .keys-strip { border-top: 1px solid var(--hair); padding: 26px 0; }
+  .keys-line { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: baseline; font-size: 13.5px; color: var(--dim); }
+  .keys-line .k { display: inline-flex; gap: 7px; align-items: baseline; }
+  kbd {
+    font-family: var(--font-m); font-size: 11px; color: var(--ink);
+    border: 1px solid var(--hair); border-bottom-width: 2px; border-radius: 5px;
+    padding: 2px 7px; background: #FFF; white-space: nowrap;
+  }
+
+  /* ---------- install ---------- */
+  .install-grid { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 6fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
+  @media (max-width: 900px) { .install-grid { grid-template-columns: 1fr; } }
+  .install-col + .install-col { border-left: 1px solid var(--hair); padding-left: clamp(28px, 5vw, 72px); }
+  @media (max-width: 900px) { .install-col + .install-col { border-left: 0; padding-left: 0; border-top: 1px solid var(--hair); padding-top: 32px; } }
+  .install-col h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .install-col p { font-size: 14px; color: var(--dim); max-width: 52ch; }
+  .install-col p code { font-family: var(--font-m); font-size: 12px; color: var(--ink); background: var(--paper-2); border-radius: 4px; padding: 1px 5px; }
+  pre {
+    font-family: var(--font-m); font-size: 12.5px; line-height: 1.8;
+    color: var(--ink); background: #ECECE9;
+    border: 1px solid var(--hair); border-radius: 10px;
+    padding: 14px 16px; overflow-x: auto; position: relative; margin-top: 18px;
+  }
+  pre .c { color: var(--faint); }
+  .copy {
+    position: absolute; top: 8px; right: 8px;
+    font-family: var(--font-m); font-size: 10px; letter-spacing: 0.08em;
+    color: var(--dim); background: var(--paper); border: 1px solid var(--hair);
+    border-radius: 6px; padding: 4px 9px; cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .copy:hover { color: var(--ink); border-color: var(--faint); }
+  .install-cta { margin-top: 20px; }
+
+  /* ---------- footer ---------- */
+  footer { border-top: 1px solid var(--hair); padding: 26px 0 44px; }
+  .foot { display: flex; align-items: baseline; gap: 24px; flex-wrap: wrap; font-size: 13px; color: var(--faint); }
+  .foot a { color: var(--dim); text-decoration: none; }
+  .foot a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+  .foot .right { margin-left: auto; display: flex; gap: 20px; }
+  @media (max-width: 760px) { .foot .right { margin-left: 0; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .slice-art { transform: scale(1.09) !important; }
+    .frame, .btn, .row::before { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- The panorama: dawn on the left display, dusk on the right, the sun straddling the seam.
+     Drawn once at the true aspect of the two-screen canvas (2 × 8:5). -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0"    stop-color="#4A2670"/>
+      <stop offset="0.10" stop-color="#A63D6B"/>
+      <stop offset="0.22" stop-color="#F0694A"/>
+      <stop offset="0.36" stop-color="#FF9D5C"/>
+      <stop offset="0.46" stop-color="#FFD9A3"/>
+      <stop offset="0.50" stop-color="#FFE9C4"/>
+      <stop offset="0.54" stop-color="#D9E3FF"/>
+      <stop offset="0.64" stop-color="#8FB0FF"/>
+      <stop offset="0.78" stop-color="#5F7BF0"/>
+      <stop offset="0.90" stop-color="#5A44B8"/>
+      <stop offset="1"    stop-color="#35255F"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFF3D6" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#FFF3D6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ridgeA" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3A2A5E"/>
+      <stop offset="1" stop-color="#241A44"/>
+    </linearGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="9"/></filter>
+    <symbol id="pano" viewBox="0 0 3200 1000" preserveAspectRatio="xMidYMid slice">
+      <rect width="3200" height="1000" fill="url(#sky)"/>
+      <ellipse cx="1600" cy="470" rx="215" ry="200" fill="url(#glow)"/>
+      <g fill="#FFF6E8">
+        <circle cx="210" cy="90" r="2"/><circle cx="120" cy="160" r="1.4"/>
+        <circle cx="330" cy="55" r="1.5"/><circle cx="2990" cy="80" r="2"/>
+        <circle cx="3090" cy="150" r="1.4"/><circle cx="2870" cy="45" r="1.6"/>
+      </g>
+      <g filter="url(#soft)">
+        <rect x="120" y="300" width="640" height="15" rx="7.5" fill="#FFD9A8" opacity="0.5"/>
+        <rect x="420" y="215" width="480" height="11" rx="5.5" fill="#FFE8C4" opacity="0.38"/>
+        <rect x="760" y="128" width="360" height="9" rx="4.5" fill="#FFE9CD" opacity="0.3"/>
+        <rect x="1980" y="240" width="640" height="14" rx="7" fill="#C9D6FF" opacity="0.42"/>
+        <rect x="2280" y="150" width="520" height="10" rx="5" fill="#DCE4FF" opacity="0.34"/>
+        <rect x="2120" y="330" width="420" height="12" rx="6" fill="#BFCFFF" opacity="0.3"/>
+      </g>
+      <g stroke="#3A2A4E" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.75">
+        <path d="M1260 170 q14 -14 28 0 M1288 170 q14 -14 28 0"/>
+        <path d="M1900 120 q12 -12 24 0 M1924 120 q12 -12 24 0"/>
+      </g>
+      <circle cx="1600" cy="470" r="100" fill="#FFF7E2"/>
+      <path d="M0 796 L170 742 L340 784 L520 716 L700 772 L880 730 L1060 776 L1240 722 L1400 762 L1600 736 L1780 766 L1960 716 L2140 768 L2320 726 L2500 774 L2680 730 L2860 778 L3040 738 L3200 764 L3200 1000 L0 1000 Z" fill="url(#ridgeA)"/>
+      <path d="M0 884 L220 850 L420 878 L640 842 L860 872 L1080 846 L1300 874 L1520 844 L1740 872 L1960 842 L2180 870 L2400 844 L2620 872 L2840 846 L3060 872 L3200 856 L3200 1000 L0 1000 Z" fill="#191231"/>
+    </symbol>
+    <linearGradient id="psky" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#F0694A"/>
+      <stop offset="0.45" stop-color="#FFD9A3"/>
+      <stop offset="0.55" stop-color="#D9E3FF"/>
+      <stop offset="1" stop-color="#5F7BF0"/>
+    </linearGradient>
+    <linearGradient id="pwarm" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#C2426E"/>
+      <stop offset="1" stop-color="#FFE9C4"/>
+    </linearGradient>
+    <linearGradient id="pcool" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#FFE9C4"/>
+      <stop offset="1" stop-color="#5F7BF0"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<header class="hud">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Spanorama — back to top">
+      <img src="assets/icon-256.png" alt="">
+      <b>Spanorama</b>
+    </a>
+    <span class="hud-canvas">canvas 5120 × 1440 · macOS 14+</span>
+    <div class="hud-right">
+      <span class="hud-ver">v0.1.0 · MIT</span>
+      <a class="btn btn-ink btn-sm" href="#" data-repo-path="/releases/latest">Download</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <!-- ============ THE CANVAS ============ -->
+  <section class="hero" aria-label="Spanorama in one picture">
+    <div class="stage" id="stage">
+      <div class="canvas-row">
+        <div class="frame frame-l">
+          <div class="screen">
+            <div class="slice slice-l">
+              <svg class="slice-art" aria-hidden="true"><use href="#pano"/></svg>
+            </div>
+            <span class="slice-tag">Spanorama-1.png <em>· 2560 × 1440 @2×</em></span>
+          </div>
+        </div>
+        <div class="frame frame-r">
+          <div class="screen">
+            <div class="slice slice-r">
+              <svg class="slice-art" aria-hidden="true"><use href="#pano"/></svg>
+            </div>
+            <span class="slice-tag">Spanorama-2.png <em>· 2560 × 1440 @2×</em></span>
+          </div>
+        </div>
+        <h1 class="hero-title" aria-label="One picture, every display.">
+          <span class="t-l">One picture</span>
+          <span class="t-r">every&nbsp;display.</span>
+        </h1>
+      </div>
+
+      <div class="ruler" aria-hidden="true">
+        <span class="tick" style="left:0"></span><span class="tick-l edge-l" style="left:0">x −2560</span>
+        <span class="tick" style="left:25%"></span><span class="tick-l" style="left:25%">−1280</span>
+        <span class="tick seam" style="left:50%"></span><span class="tick-l seam" style="left:50%">0 · seam</span>
+        <span class="tick" style="left:75%"></span><span class="tick-l" style="left:75%">+1280</span>
+        <span class="tick" style="left:100%"></span><span class="tick-l edge-r" style="left:100%">x +2560</span>
+      </div>
+
+      <div class="stage-hud">
+        <p class="readout" id="readout">union <b>5120 × 1440</b> · displays at <b>x −2560</b>, <b>x 0</b></p>
+        <button class="mode-toggle" type="button" id="mode-toggle">show the slices</button>
+      </div>
+    </div>
+
+    <div class="wrap hero-foot">
+      <p class="lede">Spanorama is a free, open-source macOS app that spans one image across all your displays, places pictures exactly where you want them, and applies each slice at native Retina quality. Move your pointer over the canvas — both halves pan in lockstep, because each display gets its own file and they stay aligned.</p>
+      <div class="hero-ctas">
+        <a class="btn btn-ink" href="#" data-repo-path="/releases/latest">Download v0.1.0</a>
+        <a class="btn btn-ghost" href="#install">Build from source</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ INSPECTOR ============ -->
+  <section class="section" id="layers" aria-labelledby="layers-h">
+    <div class="wrap">
+      <span class="eyebrow">Inspector</span>
+      <h2 id="layers-h">Every feature, one panel.</h2>
+      <p class="lede" style="margin-bottom: clamp(28px, 4vw, 44px);">The app edits wallpapers the way layers work in a canvas editor. Here is the whole panel.</p>
+
+      <div class="layers-grid">
+        <div class="inspector">
+          <div class="row">
+            <h3>Panorama spanning</h3><span class="meta">1 image → N slices</span>
+            <p>Add one image and it covers the entire canvas of all your displays. The seam lands exactly on the bezel.</p>
+          </div>
+          <div class="row">
+            <h3>Free positioning</h3><span class="meta">drag · scroll-zoom · arrow nudge</span>
+            <p>Move and scale on a live canvas that mirrors your real display layout — zoom anchors at the cursor.</p>
+          </div>
+          <div class="row">
+            <h3>Combine images</h3><span class="meta">z-order · duplicate · fit</span>
+            <p>Layer as many images as you like, with Fit / Fill / Stretch per image.</p>
+          </div>
+          <div class="row">
+            <h3>Per-display targeting</h3><span class="meta">snap → one screen</span>
+            <p>Snap an image to cover exactly one display — the one you choose.</p>
+          </div>
+          <div class="row">
+            <h3>Apply at Retina quality</h3><span class="meta">no scaling · 1 px = 1 pt</span>
+            <p>Each slice renders at its display's native pixel size and is applied with no scaling.</p>
+          </div>
+          <div class="row">
+            <h3>Reset</h3><span class="meta">pre-Spanorama state</span>
+            <p>One click restores the wallpapers that were active before Spanorama first ran.</p>
+          </div>
+          <div class="row">
+            <h3>Autosave &amp; layouts</h3><span class="meta">JSON in · JSON out</span>
+            <p>Your layout autosaves as you work. Export it to share or back up; import it anywhere.</p>
+          </div>
+          <div class="row">
+            <h3>Auto re-apply</h3><span class="meta">on display change</span>
+            <p>Optional. Reapplies your layout when displays connect, disconnect, or change resolution.</p>
+          </div>
+          <div class="row">
+            <h3>Launch at login</h3><span class="meta">optional</span>
+            <p>Opens with your screens, ready to apply. Quit it and the last applied layout stays.</p>
+          </div>
+        </div>
+
+        <figure class="sel-demo" aria-label="A selected layer on the canvas">
+          <div class="sel-frame">
+            <div class="sel-screen">
+              <svg class="art" aria-hidden="true"><use href="#pano"/></svg>
+              <div class="sel-rect">
+                <span class="sel-tag">layer 02 · 1440 × 900 · fill</span>
+                <span class="handle h-tl"></span><span class="handle h-tr"></span>
+                <span class="handle h-bl"></span><span class="handle h-br"></span>
+              </div>
+            </div>
+          </div>
+          <figcaption>
+            <div class="sel-caption">
+              <span class="fit-chip">Fit</span>
+              <span class="fit-chip on">Fill</span>
+              <span class="fit-chip">Stretch</span>
+            </div>
+            <p class="sel-note">scroll to zoom — anchored at the cursor · ⇧ + arrows for 10 pt steps</p>
+          </figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PIPELINE ============ -->
+  <section class="section" id="how" aria-labelledby="how-h">
+    <div class="wrap">
+      <span class="eyebrow">Pipeline</span>
+      <h2 id="how-h">How the seam stays invisible.</h2>
+      <p class="lede">macOS sets desktop pictures per display and stops there. Spanorama works with that, not against it.</p>
+
+      <div class="pipe">
+        <svg viewBox="0 0 1160 252" role="img" aria-label="One image is measured onto the union canvas, sliced per display, rendered to one PNG per display, and applied with no scaling.">
+          <g font-family="IBM Plex Mono, monospace" font-size="10.5" fill="#9A9DA3" letter-spacing="1">
+            <text x="12" y="24">ONE IMAGE</text>
+            <text x="330" y="24">UNION CANVAS</text>
+            <text x="650" y="24">RENDER PER DISPLAY</text>
+            <text x="948" y="24">APPLIED</text>
+          </g>
+          <g stroke="#DCDCD7" stroke-width="1">
+            <line x1="268" y1="132" x2="316" y2="132"/><path d="M310 128 l8 4 -8 4" fill="none"/>
+            <line x1="588" y1="132" x2="636" y2="132"/><path d="M630 128 l8 4 -8 4" fill="none"/>
+            <line x1="858" y1="132" x2="906" y2="132"/><path d="M900 128 l8 4 -8 4" fill="none"/>
+          </g>
+          <rect x="12" y="44" width="256" height="176" rx="10" fill="url(#psky)"/>
+          <text x="12" y="244" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="#5F636B">panorama.png · 5120 × 1440</text>
+
+          <rect x="330" y="44" width="256" height="176" rx="10" fill="url(#psky)"/>
+          <line x1="458" y1="44" x2="458" y2="220" stroke="#FF5436" stroke-width="1.5" stroke-dasharray="4 4"/>
+          <rect x="452" y="128" width="12" height="8" fill="#F3F3F1" stroke="#FF5436" stroke-width="1.5"/>
+          <text x="330" y="244" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="#5F636B">displays at x −2560 · x 0</text>
+
+          <g>
+            <rect x="650" y="44" width="206" height="72" rx="8" fill="#ECECE9" stroke="#DCDCD7"/>
+            <text x="664" y="76" font-family="IBM Plex Mono, monospace" font-size="11" fill="#17191E">Spanorama-1.png</text>
+            <text x="664" y="94" font-family="IBM Plex Mono, monospace" font-size="10" fill="#9A9DA3">2560 × 1440 @2×</text>
+            <rect x="650" y="128" width="206" height="72" rx="8" fill="#ECECE9" stroke="#DCDCD7"/>
+            <text x="664" y="160" font-family="IBM Plex Mono, monospace" font-size="11" fill="#17191E">Spanorama-2.png</text>
+            <text x="664" y="178" font-family="IBM Plex Mono, monospace" font-size="10" fill="#9A9DA3">2560 × 1440 @2×</text>
+          </g>
+
+          <g>
+            <rect x="948" y="60" width="100" height="66" rx="6" fill="#111318"/>
+            <rect x="1052" y="60" width="100" height="66" rx="6" fill="#111318"/>
+            <rect x="952" y="64" width="92" height="58" rx="3" fill="url(#pwarm)"/>
+            <rect x="1056" y="64" width="92" height="58" rx="3" fill="url(#pcool)"/>
+            <text x="948" y="156" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="#5F636B">one px per pt,</text>
+            <text x="948" y="172" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="#5F636B">no scaling</text>
+          </g>
+        </svg>
+        <p class="pipe-note"><b>Retina renders at 2×.</b> Each slice is written to its own temp PNG and set with <b>NSWorkspace</b>, one image pixel per screen point — that is why the seam lands exactly on the bezel. Display origins can be negative: screens left of or above the main display sit at x &lt; 0.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ KEYS ============ -->
+  <section class="keys-strip" aria-label="Keyboard shortcuts">
+    <div class="wrap keys-line">
+      <span class="k"><kbd>⌘O</kbd> add images</span>
+      <span class="k"><kbd>⇧⌘O</kbd> add panorama</span>
+      <span class="k"><kbd>⌘R</kbd> apply</span>
+      <span class="k"><kbd>drag</kbd> move</span>
+      <span class="k"><kbd>scroll</kbd> scale</span>
+      <span class="k"><kbd>← ↑ ↓ →</kbd> nudge</span>
+      <span class="k"><kbd>⌫</kbd> remove</span>
+    </div>
+  </section>
+
+  <!-- ============ INSTALL ============ -->
+  <section class="section" id="install" aria-labelledby="install-h">
+    <div class="wrap">
+      <span class="eyebrow">Install</span>
+      <h2 id="install-h">Two ways in. Both free.</h2>
+      <div class="install-grid" style="margin-top: clamp(28px, 4vw, 44px);">
+        <div class="install-col">
+          <h3>Download the app</h3>
+          <p>Grab the latest bundle from GitHub Releases. It is ad-hoc signed, not notarized — on first launch, right-click the app and choose <b>Open</b>, or clear the quarantine flag:</p>
+          <pre><code>xattr -cr dist/Spanorama.app</code><button class="copy" type="button" data-copy="xattr -cr dist/Spanorama.app">Copy</button></pre>
+          <p class="install-cta"><a class="btn btn-ink" href="#" data-repo-path="/releases/latest">Download v0.1.0 — macOS 14+</a></p>
+        </div>
+        <div class="install-col">
+          <h3>Build from source</h3>
+          <p>Plain Swift Package Manager — the Command Line Tools alone can build it, full Xcode not required. Run the test suite with <code>swift run SpanoramaTests</code>.</p>
+          <pre><code>git clone <span id="repo-clone">https://github.com/USERNAME/Spanorama.git</span>
+cd Spanorama
+./Scripts/build-app.sh release   <span class="c"># → dist/Spanorama.app</span></code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>© 2026 Spanorama contributors · MIT · inspired by <a href="http://glimmir.com/" rel="noopener">Fresco</a></span>
+    <nav class="right" aria-label="Links">
+      <a href="#" data-repo-path="">GitHub</a>
+      <a href="#" data-repo-path="/releases">Releases</a>
+      <a href="#" data-repo-path="/issues">Issues</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+  // ── Set your GitHub repo once; every repo link on the page follows it. ──
+  var REPO = "https://github.com/USERNAME/Spanorama";
+
+  document.querySelectorAll("[data-repo-path]").forEach(function (a) {
+    a.href = REPO + a.getAttribute("data-repo-path");
+  });
+  var clone = document.getElementById("repo-clone");
+  if (clone) clone.textContent = REPO + ".git";
+
+  var stage = document.getElementById("stage");
+  var fine = window.matchMedia("(pointer: fine)").matches;
+  var calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ── Pointer pans both slices in lockstep — separate files, same picture. ──
+  if (fine && !calm) {
+    var tx = 0, ty = 0, cx = 0, cy = 0, raf = null;
+    var tick = function () {
+      cx += (tx - cx) * 0.08;
+      cy += (ty - cy) * 0.08;
+      stage.style.setProperty("--panx", cx.toFixed(2));
+      stage.style.setProperty("--pany", cy.toFixed(2));
+      if (Math.abs(tx - cx) > 0.05 || Math.abs(ty - cy) > 0.05) {
+        raf = requestAnimationFrame(tick);
+      } else { raf = null; }
+    };
+    var kick = function () { if (!raf) raf = requestAnimationFrame(tick); };
+    stage.addEventListener("pointermove", function (e) {
+      var r = stage.getBoundingClientRect();
+      tx = ((e.clientX - r.left) / r.width - 0.5) * 30;
+      ty = ((e.clientY - r.top) / r.height - 0.5) * 20;
+      kick();
+    });
+    stage.addEventListener("pointerleave", function () { tx = 0; ty = 0; kick(); });
+  }
+
+  // ── Coordinate readout, mapped to real pano space — the app's own vernacular. ──
+  var readout = document.getElementById("readout");
+  var REST = 'union <b>5120 × 1440</b> · displays at <b>x −2560</b>, <b>x 0</b>';
+  if (fine && !calm) {
+    stage.addEventListener("pointermove", function (e) {
+      var r = stage.querySelector(".canvas-row").getBoundingClientRect();
+      var gap = (e.clientX - r.left) / r.width;
+      if (gap < 0 || gap > 1) { readout.innerHTML = REST; return; }
+      var left = gap < 0.5;
+      var local = left ? gap / 0.5 : (gap - 0.5) / 0.5;
+      var gx = Math.round((left ? local * 5120 - 2560 : local * 2560) / 10) * 10;
+      var gy = Math.round(((e.clientY - r.top) / r.height) * 1440 / 10) * 10;
+      if (gy < 0) gy = 0; if (gy > 1440) gy = 1440;
+      readout.innerHTML = 'x <b>' + gx.toLocaleString("en-US").replace(/-/g, "−") +
+        '</b> · y <b>' + gy.toLocaleString("en-US") +
+        '</b> · display <b>' + (left ? 1 : 2) + '</b>';
+    });
+    stage.addEventListener("pointerleave", function () { readout.innerHTML = REST; });
+  }
+
+  // ── Seamless ⇄ slices ──
+  var tog = document.getElementById("mode-toggle");
+  tog.addEventListener("click", function () {
+    var on = stage.classList.toggle("slices");
+    tog.textContent = on ? "hide the slices" : "show the slices";
+  });
+
+  // ── Copy ──
+  document.querySelectorAll(".copy").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var done = function () { btn.textContent = "Copied"; setTimeout(function () { btn.textContent = "Copy"; }, 1600); };
+      if (navigator.clipboard) navigator.clipboard.writeText(btn.dataset.copy).then(done, done);
+      else done();
+    });
+  });
+</script>
+</body>
+</html>
