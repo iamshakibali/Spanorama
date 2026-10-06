@@ -75,8 +75,8 @@ final class EditorCanvas: NSView {
     // MARK: - Drawing
 
     override func draw(_ dirtyRect: NSRect) {
-        NSColor.windowBackgroundColor.setFill()
-        dirtyRect.fill()
+        // The window background is a glass effect view (see VisualEffectBackground);
+        // leave this view transparent so the glass shows around the canvas.
 
         guard let model else { return }
         let transform = canvasTransform
@@ -86,12 +86,12 @@ final class EditorCanvas: NSView {
             return
         }
 
-        // Canvas sheet
+        // Canvas sheet — previews the background color that will be applied.
         let unionRect = transform.toView(union)
-        NSColor.underPageBackgroundColor.setFill()
+        model.document.background.nsColor.setFill()
         NSBezierPath(rect: unionRect).fill()
 
-        // Screen rectangles
+        // Screen rectangles — base fill previews the applied background color.
         for screen in model.screenService.screens {
             let rect = transform.toView(screen.frame)
 
@@ -102,11 +102,11 @@ final class EditorCanvas: NSView {
             shadow.shadowBlurRadius = 6
             shadow.shadowOffset = NSSize(width: 0, height: -2)
             shadow.set()
-            NSColor.textBackgroundColor.setFill()
+            model.document.background.nsColor.setFill()
             NSBezierPath(rect: rect).fill()
             NSGraphicsContext.current?.restoreGraphicsState()
 
-            NSColor.gridColor.setStroke()
+            NSColor.separatorColor.setStroke()
             let border = NSBezierPath(rect: rect)
             border.lineWidth = 1
             border.stroke()

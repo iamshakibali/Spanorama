@@ -27,18 +27,22 @@ struct ContentView: View {
     }
 
     var body: some View {
-        EditorCanvasView()
-            .toolbar { toolbarContent }
-            .inspector(isPresented: inspectorBinding) {
-                LayerInspector()
-                    .environmentObject(model)
-                    .inspectorColumnWidth(min: 260, ideal: 300, max: 380)
-            }
-            .navigationTitle("Spanorama")
-            .frame(minWidth: 980, minHeight: 620)
-            .safeAreaInset(edge: .bottom) {
-                statusBar
-            }
+        ZStack {
+            VisualEffectBackground()
+                .ignoresSafeArea()
+            EditorCanvasView()
+        }
+        .toolbar { toolbarContent }
+        .inspector(isPresented: inspectorBinding) {
+            LayerInspector()
+                .environmentObject(model)
+                .inspectorColumnWidth(min: 260, ideal: 300, max: 380)
+        }
+        .navigationTitle("Spanorama")
+        .frame(minWidth: 980, minHeight: 620)
+        .safeAreaInset(edge: .bottom) {
+            statusBar
+        }
             .alert("Couldn't apply wallpaper", isPresented: applyErrorBinding, presenting: model.applyErrorMessage) { _ in
                 Button("OK", role: .cancel) {}
             } message: { message in
@@ -126,8 +130,11 @@ struct ContentView: View {
             }
         }
         .font(.caption)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 7)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .padding(.horizontal, 12)
-        .padding(.vertical, 5)
-        .background(.bar)
+        .padding(.bottom, 8)
+        .foregroundStyle(.secondary)
     }
 }
